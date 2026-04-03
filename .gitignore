@@ -1,0 +1,25 @@
+# Generated data
+data/sample_pdfs/*.pdf
+data/sample_pdfs_*
+pipeline_data/
+embeddings/
+structured_docs/
+chunks/
+
+# Benchmark outputs
+benchmarks/results/*.json
+benchmarks/visualizations/*.png
+benchmarks/visualizations/*.csv
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Environment
+.env
+*.npy
+
+# Checkpoints
+*_checkpoint.json
+*_partial.json
