@@ -1,16 +1,32 @@
-# web framework for API
+# Original dependencies
 fastapi
-# ASGI server to run FastAPI
 uvicorn
-# Mistral API client
-mistralai
-# Array operations for embedding
 numpy
-# Natural language processing
 nltk
-# File upload handling for FastAPI
 python-multipart
-# Environment variable loading from .env file
 python-dotenv
-# Streamlit web UI framework
 streamlit
+
+# Local models (replaces Mistral API)
+sentence-transformers
+torch
+torchvision
+
+# Local PDF parsing (replaces Mistral OCR)
+pdfplumber
+PyMuPDF
+
+# Optimization tools
+numba
+faiss-cpu
+
+# Profiling
+memory-profiler
+line-profiler
+matplotlib
+pandas
+seaborn
+
+# Optional: GPU support (uncomment if GPU available)
+# cupy-cuda12x
+# faiss-gpu
