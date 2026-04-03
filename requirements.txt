@@ -1,0 +1,16 @@
+# web framework for API
+fastapi
+# ASGI server to run FastAPI
+uvicorn
+# Mistral API client
+mistralai
+# Array operations for embedding
+numpy
+# Natural language processing
+nltk
+# File upload handling for FastAPI
+python-multipart
+# Environment variable loading from .env file
+python-dotenv
+# Streamlit web UI framework
+streamlit
