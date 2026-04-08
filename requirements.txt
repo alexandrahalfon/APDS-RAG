@@ -1,32 +1,41 @@
-# Original dependencies
+# Web framework & API
 fastapi
 uvicorn
-numpy
-nltk
+pydantic
 python-multipart
-python-dotenv
 streamlit
+requests
 
-# Local models (replaces Mistral API)
-sentence-transformers
+# Environment
+python-dotenv
+
+# Numerical & ML
+numpy
 torch
-torchvision
+sentence-transformers
 
-# Local PDF parsing (replaces Mistral OCR)
+# NLP
+nltk
+
+# Local PDF parsing
 pdfplumber
 PyMuPDF
 
-# Optimization tools
+# Optimization
 numba
 faiss-cpu
 
-# Profiling
+# Profiling & benchmarking
 memory-profiler
 line-profiler
+
+# Visualization & data
 matplotlib
 pandas
 seaborn
 
+# PDF generation (data/generate_corpus.py)
+reportlab
+
 # Optional: GPU support (uncomment if GPU available)
-# cupy-cuda12x
 # faiss-gpu
