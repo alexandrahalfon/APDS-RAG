@@ -27,15 +27,13 @@ def _baseline_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
         pdf_paths: List of PDF file paths.
         num_queries: Number of search queries to run.
     """
-    # Ingest sequentially
-    all_chunks = []
-    chunk_id = 0
-    for path in pdf_paths:
-        chunks = process_single_pdf(path)
-        for c in chunks:
-            c['id'] = chunk_id
-            all_chunks.append(c)
-            chunk_id += 1
+    # Ingest sequentially — list comprehension with enumerate for ID assignment
+    all_chunks = [
+        {**c, 'id': i}
+        for i, c in enumerate(
+            chunk for path in pdf_paths for chunk in process_single_pdf(path)
+        )
+    ]
 
     if not all_chunks:
         return
@@ -43,10 +41,9 @@ def _baseline_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     # Embed sequentially
     all_chunks = generate_embeddings_baseline(all_chunks)
 
-    # Search with NumPy
-    embeddings = np.array([c['embedding'] for c in all_chunks])
-    metadata = [{'id': c['id'], 'page': c['page'], 'text': c['text'], 'word_count': c['word_count']}
-                for c in all_chunks]
+    # Search with NumPy — explicit float32 dtype
+    embeddings = np.array([c['embedding'] for c in all_chunks], dtype=np.float32)
+    metadata = [{k: v for k, v in c.items() if k != 'embedding'} for c in all_chunks]
     indices = np.random.choice(len(embeddings), size=min(num_queries, len(embeddings)), replace=False)
     for idx in indices:
         search_similar_chunks(embeddings[idx], embeddings, metadata, top_k=10)

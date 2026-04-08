@@ -24,17 +24,18 @@ def _make_dummy_chunks(n: int = 200) -> list:
     Returns:
         List of chunk dicts.
     """
-    chunks = []
-    for i in range(n):
-        chunks.append({
+    # List comprehension instead of for-loop + append
+    return [
+        {
             'id': i,
             'page': 1,
             'text': f"This is sample text for benchmark chunk number {i}. "
                     f"It contains enough words to simulate a real paragraph "
                     f"from a PDF document that has been processed and chunked.",
             'word_count': 25,
-        })
-    return chunks
+        }
+        for i in range(n)
+    ]
 
 
 def run_stage2_benchmark(pdf_folder: str = None, num_chunks: int = 200) -> None:

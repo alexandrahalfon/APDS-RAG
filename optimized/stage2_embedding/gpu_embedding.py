@@ -2,6 +2,7 @@
 
 from typing import List, Dict
 
+import numpy as np
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -42,8 +43,9 @@ def generate_embeddings_batched(
             device=device,
         )
 
+        # Store as float32 list — avoids float64 default and keeps JSON-serializable
         for j, emb in enumerate(embeddings):
-            chunks[start + j]['embedding'] = emb.tolist()
+            chunks[start + j]['embedding'] = emb.astype(np.float32).tolist()
 
         if end % (batch_size * 5) == 0 or end == total:
             print(f"  ✓ {end}/{total} chunks embedded")
@@ -107,7 +109,7 @@ def generate_embeddings_gpu_amp(
             )
 
         for emb in embeddings:
-            chunks[idx]['embedding'] = emb.tolist()
+            chunks[idx]['embedding'] = emb.astype(np.float32).tolist()
             idx += 1
 
         if idx % (batch_size * 5) == 0 or idx == total:

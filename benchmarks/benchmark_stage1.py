@@ -21,15 +21,13 @@ def _sequential_ingest(pdf_paths: list) -> list:
     Returns:
         Flat list of chunk dicts.
     """
-    all_chunks = []
-    chunk_id = 0
-    for path in pdf_paths:
-        chunks = process_single_pdf(path)
-        for c in chunks:
-            c['id'] = chunk_id
-            all_chunks.append(c)
-            chunk_id += 1
-    return all_chunks
+    # List comprehension + enumerate replaces nested loop with manual counter
+    return [
+        {**c, 'id': i}
+        for i, c in enumerate(
+            chunk for path in pdf_paths for chunk in process_single_pdf(path)
+        )
+    ]
 
 
 def run_stage1_benchmark(pdf_folder: str) -> None:

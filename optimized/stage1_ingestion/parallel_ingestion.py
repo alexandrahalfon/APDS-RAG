@@ -25,15 +25,17 @@ def process_single_pdf(pdf_path: str) -> List[Dict]:
         print(f"  ⚠ Error processing {Path(pdf_path).name}: {e}")
         return []
 
-    chunks: List[Dict] = []
-    for page in doc['pages']:
-        for para in page['paragraphs']:
-            chunks.append({
-                'page': page['page_number'],
-                'text': para['text'],
-                'word_count': para['word_count'],
-                'source_file': doc['file_name'],
-            })
+    # List comprehension replaces nested for-loop (less overhead, single expression)
+    chunks: List[Dict] = [
+        {
+            'page': page['page_number'],
+            'text': para['text'],
+            'word_count': para['word_count'],
+            'source_file': doc['file_name'],
+        }
+        for page in doc['pages']
+        for para in page['paragraphs']
+    ]
 
     return chunks
 
@@ -59,14 +61,14 @@ def parallel_ingest(pdf_paths: List[str], num_workers: Optional[int] = None) -> 
     with mp.Pool(processes=num_workers) as pool:
         results = pool.map(process_single_pdf, pdf_paths)
 
-    # Flatten and assign sequential IDs
-    all_chunks: List[Dict] = []
-    chunk_id = 0
-    for chunk_list in results:
-        for chunk in chunk_list:
-            chunk['id'] = chunk_id
-            all_chunks.append(chunk)
-            chunk_id += 1
+    # Flatten nested results and assign sequential IDs in one pass
+    # List comprehension + enumerate replaces nested for-loop with manual counter
+    all_chunks: List[Dict] = [
+        {**chunk, 'id': i}
+        for i, chunk in enumerate(
+            chunk for chunk_list in results for chunk in chunk_list
+        )
+    ]
 
     print(f"✓ {len(all_chunks)} chunks from {len(pdf_paths)} PDFs")
     return all_chunks
