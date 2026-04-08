@@ -48,14 +48,14 @@ def search_similar_numba(
         Tuple of (indices, scores) arrays, each of length top_k.
     """
     n = embeddings.shape[0]
-    scores = np.empty(n, dtype=np.float64)
+    scores = np.empty(n, dtype=np.float32)
 
     for i in prange(n):
         scores[i] = cosine_similarity_numba(query_emb, embeddings[i])
 
     # Partial argsort — get top_k indices
     indices = np.argsort(scores)[::-1][:top_k]
-    top_scores = np.empty(top_k, dtype=np.float64)
+    top_scores = np.empty(top_k, dtype=np.float32)
     for i in range(top_k):
         top_scores[i] = scores[indices[i]]
 
