@@ -1,0 +1,411 @@
+<html><head><style>
+body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+table { border-collapse: collapse; margin: 20px 0; width: 100%; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+th { background-color: #f4f4f4; text-align: center; }
+td:first-child, th:first-child { text-align: left; }
+h2 { margin-top: 40px; }
+</style></head><body>
+<h1>APDS-RAG Benchmark Results</h1>
+<h2>Table 1: Per-Stage Benchmark Results</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Stage</th>
+      <th>Method</th>
+      <th>Time (s)</th>
+      <th>Memory (MB)</th>
+      <th>Speedup</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Stage 1</td>
+      <td>sequential</td>
+      <td>299.35</td>
+      <td>1431.0</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Stage 1</td>
+      <td>multiprocessing_2w</td>
+      <td>285.35</td>
+      <td>1166.4</td>
+      <td>1.05x</td>
+    </tr>
+    <tr>
+      <td>Stage 1</td>
+      <td>multiprocessing_4w</td>
+      <td>299.18</td>
+      <td>1177.7</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Stage 1</td>
+      <td>multiprocessing_8w</td>
+      <td>300.85</td>
+      <td>1187.8</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Stage 1</td>
+      <td>threading_2w</td>
+      <td>319.15</td>
+      <td>2102.2</td>
+      <td>0.94x</td>
+    </tr>
+    <tr>
+      <td>Stage 1</td>
+      <td>threading_4w</td>
+      <td>329.29</td>
+      <td>2639.9</td>
+      <td>0.91x</td>
+    </tr>
+    <tr>
+      <td>Stage 1</td>
+      <td>threading_8w</td>
+      <td>338.21</td>
+      <td>3436.1</td>
+      <td>0.89x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>cpu_sequential</td>
+      <td>1.40</td>
+      <td>1855.3</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>cpu_batched_bs16</td>
+      <td>2.48</td>
+      <td>1970.7</td>
+      <td>0.56x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>cpu_batched_bs32</td>
+      <td>2.09</td>
+      <td>1984.4</td>
+      <td>0.67x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>cpu_batched_bs64</td>
+      <td>1.74</td>
+      <td>2019.6</td>
+      <td>0.80x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>cpu_batched_bs128</td>
+      <td>1.62</td>
+      <td>2086.9</td>
+      <td>0.86x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>gpu_batched_bs32</td>
+      <td>0.18</td>
+      <td>2024.8</td>
+      <td>7.59x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>gpu_batched_bs64</td>
+      <td>0.12</td>
+      <td>1981.0</td>
+      <td>12.09x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>gpu_batched_bs128</td>
+      <td>0.09</td>
+      <td>1981.0</td>
+      <td>15.30x</td>
+    </tr>
+    <tr>
+      <td>Stage 2</td>
+      <td>gpu_amp_bs64</td>
+      <td>0.17</td>
+      <td>1997.9</td>
+      <td>8.01x</td>
+    </tr>
+    <tr>
+      <td>Stage 3</td>
+      <td>numpy_baseline</td>
+      <td>0.72</td>
+      <td>662.2</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Stage 3</td>
+      <td>numpy_vectorized</td>
+      <td>0.04</td>
+      <td>662.5</td>
+      <td>16.72x</td>
+    </tr>
+    <tr>
+      <td>Stage 3</td>
+      <td>numpy_vectorized_prenorm</td>
+      <td>0.01</td>
+      <td>665.7</td>
+      <td>70.83x</td>
+    </tr>
+    <tr>
+      <td>Stage 3</td>
+      <td>numba_jit</td>
+      <td>0.09</td>
+      <td>665.7</td>
+      <td>8.50x</td>
+    </tr>
+    <tr>
+      <td>Stage 3</td>
+      <td>faiss_flat</td>
+      <td>0.02</td>
+      <td>665.7</td>
+      <td>47.85x</td>
+    </tr>
+    <tr>
+      <td>Stage 4</td>
+      <td>gen_float32_cpu</td>
+      <td>138.11</td>
+      <td>10440.3</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Stage 4</td>
+      <td>gen_float16_cpu</td>
+      <td>263.73</td>
+      <td>10439.5</td>
+      <td>0.52x</td>
+    </tr>
+    <tr>
+      <td>Stage 4</td>
+      <td>gen_float16_gpu</td>
+      <td>10.50</td>
+      <td>10617.7</td>
+      <td>13.15x</td>
+    </tr>
+    <tr>
+      <td>Stage 4</td>
+      <td>gen_4bit_gpu</td>
+      <td>12.47</td>
+      <td>10616.8</td>
+      <td>11.07x</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Table 2: End-to-End Pipeline Comparison</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Pipeline Tier</th>
+      <th>Total Time (s)</th>
+      <th>Peak Memory (MB)</th>
+      <th>Speedup vs Baseline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Baseline</td>
+      <td>1011.29</td>
+      <td>8796.2</td>
+      <td>1.00x</td>
+    </tr>
+    <tr>
+      <td>Trad Python Opt</td>
+      <td>4357.19</td>
+      <td>10069.7</td>
+      <td>0.23x</td>
+    </tr>
+    <tr>
+      <td>Optimized</td>
+      <td>339.02</td>
+      <td>11053.6</td>
+      <td>2.98x</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Table 3: Search Scaling</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Vectors</th>
+      <th>Python for-loop (s)</th>
+      <th>NumPy vectorized (s)</th>
+      <th>NumPy vectorized speedup</th>
+      <th>Numba JIT (s)</th>
+      <th>Numba JIT speedup</th>
+      <th>FAISS (s)</th>
+      <th>FAISS speedup</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>500</td>
+      <td>0.165</td>
+      <td>0.011</td>
+      <td>15.7x</td>
+      <td>0.018</td>
+      <td>8.9x</td>
+      <td>0.002</td>
+      <td>86.8x</td>
+    </tr>
+    <tr>
+      <td>1,000</td>
+      <td>0.330</td>
+      <td>0.021</td>
+      <td>15.7x</td>
+      <td>0.040</td>
+      <td>8.2x</td>
+      <td>0.004</td>
+      <td>82.4x</td>
+    </tr>
+    <tr>
+      <td>2,000</td>
+      <td>0.666</td>
+      <td>0.048</td>
+      <td>14.0x</td>
+      <td>0.087</td>
+      <td>7.6x</td>
+      <td>0.008</td>
+      <td>87.7x</td>
+    </tr>
+    <tr>
+      <td>5,000</td>
+      <td>1.705</td>
+      <td>0.115</td>
+      <td>14.8x</td>
+      <td>0.230</td>
+      <td>7.4x</td>
+      <td>0.018</td>
+      <td>93.1x</td>
+    </tr>
+    <tr>
+      <td>10,000</td>
+      <td>3.523</td>
+      <td>0.247</td>
+      <td>14.3x</td>
+      <td>0.411</td>
+      <td>8.6x</td>
+      <td>0.034</td>
+      <td>103.0x</td>
+    </tr>
+    <tr>
+      <td>25,000</td>
+      <td>9.974</td>
+      <td>0.980</td>
+      <td>10.2x</td>
+      <td>0.953</td>
+      <td>10.5x</td>
+      <td>0.114</td>
+      <td>87.6x</td>
+    </tr>
+    <tr>
+      <td>50,000</td>
+      <td>20.185</td>
+      <td>2.404</td>
+      <td>8.4x</td>
+      <td>1.893</td>
+      <td>10.7x</td>
+      <td>0.315</td>
+      <td>64.1x</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Table 4: Generation Scaling</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Max Tokens</th>
+      <th>f32 CPU (s)</th>
+      <th>f16 CPU (s)</th>
+      <th>f16 CPU speedup</th>
+      <th>f16 GPU (s)</th>
+      <th>f16 GPU speedup</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>32</td>
+      <td>45.17</td>
+      <td>117.18</td>
+      <td>0.39x</td>
+      <td>3.89</td>
+      <td>11.60x</td>
+    </tr>
+    <tr>
+      <td>64</td>
+      <td>81.09</td>
+      <td>147.81</td>
+      <td>0.55x</td>
+      <td>4.95</td>
+      <td>16.39x</td>
+    </tr>
+    <tr>
+      <td>128</td>
+      <td>83.51</td>
+      <td>150.50</td>
+      <td>0.55x</td>
+      <td>5.01</td>
+      <td>16.68x</td>
+    </tr>
+    <tr>
+      <td>256</td>
+      <td>84.18</td>
+      <td>145.84</td>
+      <td>0.58x</td>
+      <td>5.68</td>
+      <td>14.83x</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Summary: Best Speedup per Stage</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Stage</th>
+      <th>Baseline</th>
+      <th>Baseline Time (s)</th>
+      <th>Best Method</th>
+      <th>Best Time (s)</th>
+      <th>Speedup</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stage1</td>
+      <td>sequential</td>
+      <td>299.35</td>
+      <td>multiprocessing_2w</td>
+      <td>285.35</td>
+      <td>1.0x</td>
+    </tr>
+    <tr>
+      <td>stage2</td>
+      <td>cpu_sequential</td>
+      <td>1.40</td>
+      <td>gpu_batched_bs128</td>
+      <td>0.09</td>
+      <td>15.3x</td>
+    </tr>
+    <tr>
+      <td>stage3</td>
+      <td>numpy_baseline</td>
+      <td>0.72</td>
+      <td>numpy_vectorized_prenorm</td>
+      <td>0.01</td>
+      <td>70.8x</td>
+    </tr>
+    <tr>
+      <td>stage4</td>
+      <td>gen_float32_cpu</td>
+      <td>138.11</td>
+      <td>gen_float16_gpu</td>
+      <td>10.50</td>
+      <td>13.2x</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>

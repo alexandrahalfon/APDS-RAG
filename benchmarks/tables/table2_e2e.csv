@@ -1,0 +1,4 @@
+Pipeline Tier,Total Time (s),Peak Memory (MB),Speedup vs Baseline
+Baseline,1011.29,8796.2,1.00x
+Trad Python Opt,4357.19,10069.7,0.23x
+Optimized,339.02,11053.6,2.98x

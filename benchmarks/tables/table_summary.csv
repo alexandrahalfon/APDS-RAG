@@ -1,0 +1,5 @@
+Stage,Baseline,Baseline Time (s),Best Method,Best Time (s),Speedup
+stage1,sequential,299.35,multiprocessing_2w,285.35,1.0x
+stage2,cpu_sequential,1.4,gpu_batched_bs128,0.09,15.3x
+stage3,numpy_baseline,0.72,numpy_vectorized_prenorm,0.01,70.8x
+stage4,gen_float32_cpu,138.11,gen_float16_gpu,10.5,13.2x
