@@ -130,7 +130,10 @@ def generate_answer_optimized(
     text = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
-    inputs = tokenizer(text, return_tensors="pt").to(use_device)
+    inputs = tokenizer(
+        text, return_tensors="pt", truncation=True,
+        max_length=model.config.max_position_embeddings - max_new_tokens,
+    ).to(use_device)
 
     with torch.inference_mode():  # Slightly faster than torch.no_grad()
         outputs = model.generate(

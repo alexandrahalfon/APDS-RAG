@@ -329,7 +329,16 @@ def run_corpus_scaling(
 
         # --- Fully optimized: parallel ingest + batched embed + FAISS ---
         start = time.perf_counter()
-        chunks = parallel_ingest(pdf_subset)
+        try:
+            chunks = parallel_ingest(pdf_subset)
+        except Exception as e:
+            print(f"    ⚠ parallel_ingest failed ({e}), falling back to sequential")
+            chunks = [
+                {**c, 'id': i}
+                for i, c in enumerate(
+                    chunk for path in pdf_subset for chunk in process_single_pdf(path)
+                )
+            ]
         if chunks:
             chunks = generate_embeddings_batched(chunks, batch_size=64, device='cpu')
             embs = np.array([c['embedding'] for c in chunks], dtype=np.float32)

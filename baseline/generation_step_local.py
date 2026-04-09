@@ -100,7 +100,10 @@ def generate_answer_baseline(
     text = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
-    inputs = tokenizer(text, return_tensors="pt")
+    inputs = tokenizer(
+        text, return_tensors="pt", truncation=True,
+        max_length=model.config.max_position_embeddings - max_new_tokens,
+    )
 
     with torch.no_grad():
         outputs = model.generate(
