@@ -1,0 +1,38 @@
+{
+  "cpu_sequential": {
+    "time_seconds": 1.3965,
+    "peak_memory_mb": 1855.3
+  },
+  "cpu_batched_bs16": {
+    "time_seconds": 2.4831,
+    "peak_memory_mb": 1970.65
+  },
+  "cpu_batched_bs32": {
+    "time_seconds": 2.0925,
+    "peak_memory_mb": 1984.36
+  },
+  "cpu_batched_bs64": {
+    "time_seconds": 1.7399,
+    "peak_memory_mb": 2019.63
+  },
+  "cpu_batched_bs128": {
+    "time_seconds": 1.6223,
+    "peak_memory_mb": 2086.95
+  },
+  "gpu_batched_bs32": {
+    "time_seconds": 0.1839,
+    "peak_memory_mb": 2024.79
+  },
+  "gpu_batched_bs64": {
+    "time_seconds": 0.1155,
+    "peak_memory_mb": 1981.0
+  },
+  "gpu_batched_bs128": {
+    "time_seconds": 0.0913,
+    "peak_memory_mb": 1981.0
+  },
+  "gpu_amp_bs64": {
+    "time_seconds": 0.1744,
+    "peak_memory_mb": 1997.93
+  }
+}

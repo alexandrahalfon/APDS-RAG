@@ -1,0 +1,18 @@
+{
+  "gen_float32_cpu": {
+    "time_seconds": 138.1061,
+    "peak_memory_mb": 10440.28
+  },
+  "gen_float16_cpu": {
+    "time_seconds": 263.7295,
+    "peak_memory_mb": 10439.52
+  },
+  "gen_float16_gpu": {
+    "time_seconds": 10.5019,
+    "peak_memory_mb": 10617.74
+  },
+  "gen_4bit_gpu": {
+    "time_seconds": 12.4725,
+    "peak_memory_mb": 10616.77
+  }
+}
