@@ -168,7 +168,8 @@ def _optimized_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     if not all_chunks:
         return
 
-    all_chunks = generate_embeddings_batched(all_chunks, batch_size=64, device='cpu')
+    embed_device = "cuda" if torch.cuda.is_available() else "cpu"
+    all_chunks = generate_embeddings_batched(all_chunks, batch_size=64, device=embed_device)
 
     embeddings = _extract_embeddings(all_chunks)
     metadata = [{k: v for k, v in c.items() if k != 'embedding'} for c in all_chunks]
