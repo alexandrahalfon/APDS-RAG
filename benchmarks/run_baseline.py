@@ -1,6 +1,7 @@
 """Run baseline benchmarks for the full RAG pipeline."""
 
-import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
+import os; os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # noqa: E702
+import torch  # noqa: E402, F401 — must load before pdfplumber (macOS segfault)
 
 import sys
 import json

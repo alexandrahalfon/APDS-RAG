@@ -1,13 +1,14 @@
 """Benchmark Stage 2: Embedding generation methods and batch sizes."""
 
+import os; os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # noqa: E702
+import torch  # noqa: E402, F401 — must load before pdfplumber (macOS segfault)
+
 import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
-
 import copy
 import json
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from baseline.embedding_step_local import generate_embeddings_baseline
 from optimized.stage2_embedding.gpu_embedding import (

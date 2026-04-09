@@ -9,14 +9,15 @@ Three-tier progression (now includes generation — Stage 4):
                          float16 generation (+ GPU if available)
 """
 
+import os; os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # noqa: E702
+import torch  # noqa: E402, F401 — must load before pdfplumber (macOS segfault)
+
 import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
-
 import json
 import numpy as np
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from benchmarks.profiler import PipelineProfiler
 
