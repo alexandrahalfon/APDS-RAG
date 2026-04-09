@@ -21,6 +21,10 @@ class PipelineProfiler:
     def profile_stage(self, stage_name: str, func: Callable, *args: Any, **kwargs: Any) -> Any:
         """Run *func* and record its wall-clock time and peak memory.
 
+        Uses psutil to sample memory in a background thread instead of
+        memory_profiler's fork-based approach, which segfaults when
+        torch is running model.encode().
+
         Args:
             stage_name: Label for the stage (used as dict key).
             func: Callable to profile.
@@ -29,26 +33,40 @@ class PipelineProfiler:
         Returns:
             Whatever *func* returns.
         """
-        from memory_profiler import memory_usage
+        import threading
+        import psutil
+        import os
 
-        # Measure memory and time together
+        process = psutil.Process(os.getpid())
+        peak_mem = [process.memory_info().rss / (1024 * 1024)]  # MB
+        stop_event = threading.Event()
+
+        def _monitor():
+            while not stop_event.is_set():
+                try:
+                    mem = process.memory_info().rss / (1024 * 1024)
+                    if mem > peak_mem[0]:
+                        peak_mem[0] = mem
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    break
+                stop_event.wait(0.1)
+
+        monitor = threading.Thread(target=_monitor, daemon=True)
+        monitor.start()
+
         start_time = time.perf_counter()
-        mem_usage, result = memory_usage(
-            (func, args, kwargs),
-            interval=0.1,
-            retval=True,
-            max_usage=True,
-        )
+        result = func(*args, **kwargs)
         elapsed = time.perf_counter() - start_time
 
-        peak_memory = mem_usage if isinstance(mem_usage, (int, float)) else max(mem_usage)
+        stop_event.set()
+        monitor.join(timeout=1.0)
 
         self.results[stage_name] = {
             'time_seconds': round(elapsed, 4),
-            'peak_memory_mb': round(float(peak_memory), 2),
+            'peak_memory_mb': round(peak_mem[0], 2),
         }
 
-        print(f"  ✓ {stage_name}: {elapsed:.2f}s | {peak_memory:.1f} MB peak")
+        print(f"  ✓ {stage_name}: {elapsed:.2f}s | {peak_mem[0]:.1f} MB peak")
         return result
 
     def save_results(self, filename: str) -> None:
