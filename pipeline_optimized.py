@@ -44,6 +44,10 @@ class OptimizedRAGPipeline:
         Args:
             pdf_folder: Path to directory containing PDF files.
         """
+        # Pre-load torch/sentence-transformers before pdfplumber runs.
+        # On macOS x86_64, loading torch after pdfplumber's native libs segfaults.
+        get_model()
+
         pdf_paths = sorted(str(p) for p in Path(pdf_folder).glob('*.pdf'))
         if not pdf_paths:
             print(f"⚠ No PDFs found in {pdf_folder}")

@@ -205,6 +205,12 @@ def run_e2e_benchmark(pdf_folder: str, num_queries: int = 10) -> None:
     print(f"\n=== End-to-End Benchmark ({len(pdf_paths)} PDFs, {num_queries} queries) ===\n")
     profiler = PipelineProfiler()
 
+    # Pre-load torch/sentence-transformers before pdfplumber runs.
+    # On macOS x86_64, loading torch's native libs after pdfplumber's
+    # cryptography/cffi libs causes a segfault.
+    from baseline.embedding_step_local import get_model
+    get_model()
+
     # Tier 1 — Baseline
     profiler.profile_stage("baseline_e2e", _baseline_pipeline, pdf_paths, num_queries)
 

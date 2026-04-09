@@ -46,6 +46,10 @@ def run_stage2_benchmark(pdf_folder: str = None, num_chunks: int = 200) -> None:
         num_chunks: Number of dummy chunks if no PDF folder provided.
     """
     # Try to load real chunks from PDFs, fall back to dummy
+    # Pre-load torch/sentence-transformers before pdfplumber runs.
+    from baseline.embedding_step_local import get_model
+    get_model()
+
     if pdf_folder:
         from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest
         pdf_paths = sorted(str(p) for p in Path(pdf_folder).glob('*.pdf'))

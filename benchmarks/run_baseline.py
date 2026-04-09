@@ -98,6 +98,11 @@ def run_full_baseline(pdf_folder: str, num_queries: int = 10) -> None:
 
     print("\n=== Baseline Pipeline Benchmark ===\n")
 
+    # Pre-load the sentence-transformers model BEFORE pdfplumber runs.
+    # On macOS x86_64, loading torch's native libs after pdfplumber's
+    # cryptography/cffi libs causes a segfault. Loading torch first avoids this.
+    get_model()
+
     # Stage 1: Ingestion
     chunks = profiler.profile_stage("stage1_ingestion", _ingest_pdfs, pdf_folder)
     if not chunks:

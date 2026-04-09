@@ -277,6 +277,11 @@ def run_corpus_scaling(
 
     print(f"\n=== Corpus Scaling Benchmark ({max_available} PDFs available, {num_queries} queries) ===\n")
 
+    # Pre-load torch/sentence-transformers before pdfplumber runs.
+    # On macOS x86_64, loading torch after pdfplumber's native libs segfaults.
+    from baseline.embedding_step_local import get_model
+    get_model()
+
     for n_pdfs in corpus_sizes:
         pdf_subset = all_pdfs[:n_pdfs]
         print(f"  {n_pdfs} PDFs:")
