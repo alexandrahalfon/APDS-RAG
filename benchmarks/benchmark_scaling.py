@@ -340,7 +340,9 @@ def run_corpus_scaling(
                 )
             ]
         if chunks:
-            chunks = generate_embeddings_batched(chunks, batch_size=64, device='cpu')
+            import torch as _torch
+            _embed_dev = "cuda" if _torch.cuda.is_available() else "cpu"
+            chunks = generate_embeddings_batched(chunks, batch_size=64, device=_embed_dev)
             embs = np.array([c['embedding'] for c in chunks], dtype=np.float32)
             index = FAISSIndex(embs)
             idxs = np.random.choice(len(embs), size=min(num_queries, len(embs)), replace=False)
