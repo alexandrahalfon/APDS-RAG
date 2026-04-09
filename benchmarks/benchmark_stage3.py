@@ -8,12 +8,14 @@ Four-tier progression:
 """
 
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
+
 import time
 import json
 import numpy as np
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from baseline.similarity_search import cosine_similarity, search_similar_chunks
 from optimized.stage3_search.numpy_vectorized import (
