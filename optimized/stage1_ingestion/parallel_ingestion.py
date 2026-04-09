@@ -1,6 +1,7 @@
 """Parallel PDF ingestion using multiprocessing."""
 
 import multiprocessing as mp
+from itertools import chain
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -61,13 +62,11 @@ def parallel_ingest(pdf_paths: List[str], num_workers: Optional[int] = None) -> 
     with mp.Pool(processes=num_workers) as pool:
         results = pool.map(process_single_pdf, pdf_paths)
 
-    # Flatten nested results and assign sequential IDs in one pass
-    # List comprehension + enumerate replaces nested for-loop with manual counter
+    # Flatten with itertools.chain.from_iterable — avoids materializing an
+    # intermediate list of lists, yielding chunks lazily (Lecture 03).
     all_chunks: List[Dict] = [
         {**chunk, 'id': i}
-        for i, chunk in enumerate(
-            chunk for chunk_list in results for chunk in chunk_list
-        )
+        for i, chunk in enumerate(chain.from_iterable(results))
     ]
 
     print(f"✓ {len(all_chunks)} chunks from {len(pdf_paths)} PDFs")

@@ -7,12 +7,43 @@ import torch  # noqa: E402 — must load before pdfplumber to avoid macOS segfau
 import argparse
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Dict, Optional
 
 import numpy as np
 
 from baseline.embedding_step_local import get_model
+
+
+@lru_cache(maxsize=256)
+def _get_query_embedding(query: str) -> bytes:
+    """Compute and cache query embeddings using the @lru_cache decorator.
+
+    Uses lru_cache instead of a manual dict cache — cleaner, thread-safe,
+    and demonstrates the decorator/memoization pattern (Lecture 02).
+
+    The embedding is stored as bytes internally so the cache can hash it;
+    callers receive an np.ndarray via get_query_embedding_cached().
+    """
+    model = get_model()
+    emb = model.encode(query).astype(np.float32)
+    return emb.tobytes()
+
+
+def get_query_embedding_cached(query: str) -> np.ndarray:
+    """Return a cached query embedding as a numpy array.
+
+    Args:
+        query: The search query string.
+
+    Returns:
+        Float32 numpy array of shape (embedding_dim,).
+    """
+    raw = _get_query_embedding(query)
+    return np.frombuffer(raw, dtype=np.float32).copy()
+
+
 from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest
 from optimized.stage2_embedding.gpu_embedding import generate_embeddings_batched
 from optimized.stage3_search.faiss_search import FAISSIndex
@@ -91,8 +122,7 @@ class OptimizedRAGPipeline:
             print("⚠ Pipeline not initialized — run process() first")
             return {'answer': '', 'sources': []}
 
-        model = get_model()
-        query_emb = model.encode(question).astype(np.float32)
+        query_emb = get_query_embedding_cached(question)
         indices, scores = self.index.search(query_emb, top_k)
 
         sources = []
