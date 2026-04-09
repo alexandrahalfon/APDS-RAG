@@ -47,6 +47,7 @@ def _load_model(
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    is_true_4bit = False
     if optimization == "float16":  # noqa: SIM114
         model = AutoModelForCausalLM.from_pretrained(
             model_name, torch_dtype=torch.float16,
@@ -56,6 +57,7 @@ def _load_model(
             model_name, torch_dtype=torch.bfloat16,
         )
     elif optimization == "4bit":
+        is_true_4bit = False
         try:
             from transformers import BitsAndBytesConfig
 
@@ -66,6 +68,7 @@ def _load_model(
             model = AutoModelForCausalLM.from_pretrained(
                 model_name, quantization_config=config,
             )
+            is_true_4bit = True
         except ImportError:
             print("  ⚠ bitsandbytes not available — falling back to float16")
             model = AutoModelForCausalLM.from_pretrained(
@@ -86,7 +89,8 @@ def _load_model(
     model.eval()
 
     use_device = device if device == "cuda" and torch.cuda.is_available() else "cpu"
-    if use_device == "cuda" and optimization != "4bit":
+    skip_move = optimization == "4bit" and is_true_4bit
+    if use_device == "cuda" and not skip_move:
         model = model.to("cuda")
 
     param_count = sum(p.numel() for p in model.parameters()) / 1e6
