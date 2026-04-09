@@ -1,11 +1,13 @@
 """Benchmark Stage 1: Sequential vs parallel PDF ingestion."""
 
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
+
 import json
 import time
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from baseline.doc_processing_local import process_pdf_complete_local
 from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest, process_single_pdf

@@ -1,5 +1,7 @@
 """Run baseline benchmarks for the full RAG pipeline."""
 
+import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
+
 import sys
 import json
 import numpy as np

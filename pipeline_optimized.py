@@ -1,5 +1,9 @@
 """Optimized RAG pipeline: parallel ingestion, batched embeddings, FAISS search, local generation."""
 
+import os
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+import torch  # noqa: E402 — must load before pdfplumber to avoid macOS segfault
+
 import argparse
 import json
 import sys

@@ -1,11 +1,13 @@
 """Benchmark Stage 2: Embedding generation methods and batch sizes."""
 
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
+
 import copy
 import json
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from baseline.embedding_step_local import generate_embeddings_baseline
 from optimized.stage2_embedding.gpu_embedding import (

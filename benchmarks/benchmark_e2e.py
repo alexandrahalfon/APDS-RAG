@@ -10,11 +10,13 @@ Three-tier progression (now includes generation — Stage 4):
 """
 
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import benchmarks._preload  # noqa: F401 — force torch before pdfplumber
+
 import json
 import numpy as np
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from benchmarks.profiler import PipelineProfiler
 
