@@ -43,5 +43,5 @@ reportlab
 # Optional: GPU support (uncomment if GPU available)
 # faiss-gpu
 
-# Optional: 4-bit quantization (uncomment if GPU + CUDA available)
-# bitsandbytes
+# 4-bit quantization (requires GPU + CUDA)
+bitsandbytes
