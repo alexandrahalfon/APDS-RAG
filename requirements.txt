@@ -29,7 +29,7 @@ numba
 faiss-cpu
 
 # Profiling & benchmarking
-memory-profiler
+psutil
 line-profiler
 
 # Visualization & data
