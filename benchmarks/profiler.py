@@ -1,9 +1,17 @@
-"""Profiling framework for the RAG pipeline."""
+"""Profiling framework for the RAG pipeline.
+
+Uses an in-process psutil thread for memory polling instead of
+memory_profiler's fork-based approach, which segfaults when PyTorch
+operations are running (fork + torch threading = unsafe on macOS).
+"""
 
 import json
 import time
+import threading
 from pathlib import Path
 from typing import Any, Callable, Dict
+
+import psutil
 
 
 class PipelineProfiler:
@@ -19,7 +27,10 @@ class PipelineProfiler:
         self.results: Dict[str, Dict[str, float]] = {}
 
     def profile_stage(self, stage_name: str, func: Callable, *args: Any, **kwargs: Any) -> Any:
-        """Run *func* and record its wall-clock time and peak memory.
+        """Run *func* and record its wall-clock time and peak RSS memory.
+
+        Memory is polled from the current process using psutil in a
+        background thread (no forking).
 
         Args:
             stage_name: Label for the stage (used as dict key).
@@ -29,26 +40,39 @@ class PipelineProfiler:
         Returns:
             Whatever *func* returns.
         """
-        from memory_profiler import memory_usage
+        process = psutil.Process()
+        peak_rss = process.memory_info().rss
+        stop_event = threading.Event()
 
-        # Measure memory and time together
+        def _poll_memory() -> None:
+            nonlocal peak_rss
+            while not stop_event.is_set():
+                try:
+                    rss = process.memory_info().rss
+                    if rss > peak_rss:
+                        peak_rss = rss
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    break
+                stop_event.wait(0.1)
+
+        monitor = threading.Thread(target=_poll_memory, daemon=True)
+        monitor.start()
+
         start_time = time.perf_counter()
-        mem_usage, result = memory_usage(
-            (func, args, kwargs),
-            interval=0.1,
-            retval=True,
-            max_usage=True,
-        )
+        result = func(*args, **kwargs)
         elapsed = time.perf_counter() - start_time
 
-        peak_memory = mem_usage if isinstance(mem_usage, (int, float)) else max(mem_usage)
+        stop_event.set()
+        monitor.join(timeout=1.0)
+
+        peak_memory_mb = peak_rss / (1024 * 1024)
 
         self.results[stage_name] = {
             'time_seconds': round(elapsed, 4),
-            'peak_memory_mb': round(float(peak_memory), 2),
+            'peak_memory_mb': round(peak_memory_mb, 2),
         }
 
-        print(f"  ✓ {stage_name}: {elapsed:.2f}s | {peak_memory:.1f} MB peak")
+        print(f"  ✓ {stage_name}: {elapsed:.2f}s | {peak_memory_mb:.1f} MB peak")
         return result
 
     def save_results(self, filename: str) -> None:
