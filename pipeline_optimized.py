@@ -1,4 +1,4 @@
-"""Optimized RAG pipeline using parallel ingestion, batched embeddings, and FAISS search."""
+"""Optimized RAG pipeline: parallel ingestion, batched embeddings, FAISS search, local generation."""
 
 import argparse
 import json
@@ -12,6 +12,7 @@ from baseline.embedding_step_local import get_model
 from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest
 from optimized.stage2_embedding.gpu_embedding import generate_embeddings_batched
 from optimized.stage3_search.faiss_search import FAISSIndex
+from optimized.stage4_generation.optimized_generation import generate_answer_optimized
 
 
 class OptimizedRAGPipeline:
@@ -67,37 +68,52 @@ class OptimizedRAGPipeline:
 
         print(f"\n✓ Pipeline ready: {len(self.chunks)} chunks indexed")
 
-    def query(self, question: str, top_k: int = 10) -> List[Dict]:
-        """Search for chunks relevant to a question.
+    def query(self, question: str, top_k: int = 10, generate: bool = True) -> Dict:
+        """Search for relevant chunks and optionally generate an answer.
 
         Args:
             question: The query string.
-            top_k: Number of results to return.
+            top_k: Number of retrieval results.
+            generate: If True, generate an answer using the local LLM.
 
         Returns:
-            List of result dicts with text and similarity score.
+            Dict with 'answer' (if generate=True) and 'sources' keys.
         """
         if self.index is None:
             print("⚠ Pipeline not initialized — run process() first")
-            return []
+            return {'answer': '', 'sources': []}
 
         model = get_model()
         query_emb = model.encode(question).astype(np.float32)
         indices, scores = self.index.search(query_emb, top_k)
 
-        results = []
+        sources = []
         for idx, score in zip(indices, scores):
             if idx < 0:
                 continue
             chunk = self.chunks[idx]
-            results.append({
+            sources.append({
                 'text': chunk['text'],
                 'page': chunk['page'],
                 'source_file': chunk.get('source_file', ''),
                 'similarity_score': float(score),
             })
 
-        return results
+        result: Dict = {'sources': sources}
+
+        if generate and sources:
+            # Stage 4: Generate answer using optimized local LLM
+            answer = generate_answer_optimized(
+                question, sources[:5],
+                max_new_tokens=256,
+                optimization="float16",
+                device=self.device,
+            )
+            result['answer'] = answer
+        elif generate:
+            result['answer'] = "No relevant context found in the documents."
+
+        return result
 
     def save(self, output_dir: str = './pipeline_data') -> None:
         """Save pipeline state to disk.
@@ -171,13 +187,17 @@ def main() -> None:
         pipeline.save(args.save_dir)
 
     elif args.command == 'query':
-        pipeline = OptimizedRAGPipeline()
+        pipeline = OptimizedRAGPipeline(device=getattr(args, 'device', 'cpu'))
         pipeline.load(args.data_dir)
-        results = pipeline.query(args.question, top_k=args.top_k)
-        for i, r in enumerate(results, 1):
-            print(f"\n--- Result {i} (score: {r['similarity_score']:.4f}) ---")
-            print(f"Source: {r['source_file']} (page {r['page']})")
-            print(r['text'][:300])
+        result = pipeline.query(args.question, top_k=args.top_k)
+
+        if 'answer' in result:
+            print(f"\nAnswer:\n{result['answer']}")
+
+        print(f"\nSources ({len(result['sources'])} chunks):")
+        for i, r in enumerate(result['sources'], 1):
+            print(f"\n  [{i}] (score: {r['similarity_score']:.4f}) {r['source_file']} p.{r['page']}")
+            print(f"      {r['text'][:200]}...")
 
     elif args.command == 'benchmark':
         from benchmarks.benchmark_e2e import run_e2e_benchmark

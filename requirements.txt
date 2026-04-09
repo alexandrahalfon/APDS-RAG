@@ -12,8 +12,10 @@ python-dotenv
 # Numerical & ML
 numpy
 torch
+torchvision
 sentence-transformers<4
 transformers<5
+accelerate
 
 # NLP
 nltk
@@ -40,3 +42,6 @@ reportlab
 
 # Optional: GPU support (uncomment if GPU available)
 # faiss-gpu
+
+# Optional: 4-bit quantization (uncomment if GPU + CUDA available)
+# bitsandbytes
