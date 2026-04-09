@@ -12,7 +12,8 @@ python-dotenv
 # Numerical & ML
 numpy
 torch
-sentence-transformers
+sentence-transformers<4
+transformers<5
 
 # NLP
 nltk
