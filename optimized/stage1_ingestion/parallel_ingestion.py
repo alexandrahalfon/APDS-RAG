@@ -59,7 +59,9 @@ def parallel_ingest(pdf_paths: List[str], num_workers: Optional[int] = None) -> 
 
     print(f"Processing {len(pdf_paths)} PDFs with {num_workers} workers")
 
-    with mp.Pool(processes=num_workers) as pool:
+    # maxtasksperchild=4 recycles workers periodically to release memory,
+    # preventing BrokenPipeError in memory-constrained environments (Colab).
+    with mp.Pool(processes=num_workers, maxtasksperchild=4) as pool:
         results = pool.map(process_single_pdf, pdf_paths)
 
     # Flatten with itertools.chain.from_iterable — avoids materializing an
