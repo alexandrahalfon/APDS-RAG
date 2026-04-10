@@ -34,7 +34,7 @@ from optimized.stage3_search.numpy_vectorized import (
 )
 
 # Fully optimized imports
-from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest, process_single_pdf
+from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest
 from optimized.stage2_embedding.gpu_embedding import generate_embeddings_batched
 from optimized.stage3_search.faiss_search import FAISSIndex
 from optimized.stage4_generation.optimized_generation import generate_answer_optimized
@@ -63,14 +63,27 @@ def _get_sample_queries(n: int) -> list:
     return [_SAMPLE_QUERIES[i % len(_SAMPLE_QUERIES)] for i in range(n)]
 
 
-def _ingest_sequential(pdf_paths: list) -> list:
-    """Ingest PDFs sequentially and return flat chunk list."""
-    return [
-        {**c, 'id': i}
-        for i, c in enumerate(
-            chunk for path in pdf_paths for chunk in process_single_pdf(path)
-        )
-    ]
+def _ingest_pdfplumber_sequential(pdf_paths: list) -> list:
+    """Ingest PDFs sequentially using pdfplumber (baseline).
+
+    Uses the slow pdfplumber Python layout engine — this is the baseline
+    that the optimized tier (PyMuPDF + multiprocessing) improves upon.
+    """
+    all_chunks = []
+    for path in pdf_paths:
+        try:
+            doc = process_pdf_complete_local(path)
+            for page in doc['pages']:
+                for para in page['paragraphs']:
+                    all_chunks.append({
+                        'page': page['page_number'],
+                        'text': para['text'],
+                        'word_count': para['word_count'],
+                        'source_file': doc['file_name'],
+                    })
+        except Exception as e:
+            print(f"  ⚠ Error: {Path(path).name}: {e}")
+    return [{**c, 'id': i} for i, c in enumerate(all_chunks)]
 
 
 def _embed_sequential(all_chunks: list) -> list:
@@ -94,7 +107,7 @@ def _baseline_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
         pdf_paths: List of PDF file paths.
         num_queries: Number of search queries to run.
     """
-    all_chunks = _ingest_sequential(pdf_paths)
+    all_chunks = _ingest_pdfplumber_sequential(pdf_paths)
     if not all_chunks:
         return
 
@@ -133,7 +146,7 @@ def _trad_python_opt_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
         pdf_paths: List of PDF file paths.
         num_queries: Number of search queries to run.
     """
-    all_chunks = _ingest_sequential(pdf_paths)
+    all_chunks = _ingest_pdfplumber_sequential(pdf_paths)
     if not all_chunks:
         return
 
