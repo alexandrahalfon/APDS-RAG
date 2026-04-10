@@ -35,7 +35,7 @@ def plot_stage_comparison(results_file: str, output_path: str) -> None:
     names = []
     times = []
     for name, metrics in data.items():
-        if name == 'speedup':
+        if name.startswith('speedup'):
             continue
         names.append(name)
         times.append(metrics['time_seconds'])
@@ -64,7 +64,7 @@ def plot_speedup_summary(all_results: Dict[str, str], output_path: str) -> None:
 
     for stage_name, results_file in all_results.items():
         data = _load_results(results_file)
-        times = [m['time_seconds'] for k, m in data.items() if k != 'speedup']
+        times = [m['time_seconds'] for k, m in data.items() if not k.startswith('speedup')]
         if len(times) >= 2:
             baseline = times[0]
             best = min(times[1:])
@@ -98,7 +98,7 @@ def create_results_table(all_results: Dict[str, str]) -> pd.DataFrame:
     for stage_name, results_file in all_results.items():
         data = _load_results(results_file)
         for method, metrics in data.items():
-            if method == 'speedup':
+            if method.startswith('speedup'):
                 continue
             rows.append({
                 'Stage': stage_name,

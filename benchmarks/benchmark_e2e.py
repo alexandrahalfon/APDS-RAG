@@ -3,8 +3,8 @@
 Three-tier progression (now includes generation — Stage 4):
   1. Baseline          — sequential ingest, one-at-a-time embed, for-loop search,
                          float32 generation
-  2. Trad. Python opt  — same ingest & embed, NumPy vectorized search,
-                         float16 generation (dtype optimization)
+  2. Trad. Python opt  — same ingest & embed & generation, NumPy vectorized search
+                         (isolates the effect of vectorization alone)
   3. Fully optimized   — parallel ingest, batched embed, FAISS search,
                          float16 generation (+ GPU if available)
 """
@@ -122,11 +122,12 @@ def _baseline_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
 # ---------------------------------------------------------------------------
 
 def _trad_python_opt_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
-    """Same ingest & embed as baseline; vectorized search + float16 generation.
+    """Same ingest, embed, & generation as baseline; only search is vectorized.
 
-    Isolates gains from "writing better Python" (vectorized ops, float32
-    arrays, argpartition, dtype optimization) without external libraries
-    or parallelism.
+    Isolates gains from "writing better Python" (vectorized NumPy ops,
+    argpartition for top-k) without external libraries, parallelism, or
+    GPU. Generation stays float32 CPU to avoid the float16-on-CPU
+    regression (x86 CPUs lack native float16 ALUs).
 
     Args:
         pdf_paths: List of PDF file paths.
@@ -152,11 +153,8 @@ def _trad_python_opt_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
             {**metadata[j], 'text': ' '.join(metadata[j]['text'].split()[:300])}
             for j in top_indices
         ]
-        # Stage 4: generate (float16 — dtype optimization)
-        generate_answer_optimized(
-            sample_queries[i], context_chunks,
-            max_new_tokens=64, optimization="float16", device="cpu",
-        )
+        # Stage 4: generate (same float32 baseline — isolates search improvement)
+        generate_answer_baseline(sample_queries[i], context_chunks, max_new_tokens=64)
 
 
 # ---------------------------------------------------------------------------
