@@ -1,0 +1,30 @@
+{
+  "sequential": {
+    "time_seconds": 299.3512,
+    "peak_memory_mb": 1431.05
+  },
+  "multiprocessing_2w": {
+    "time_seconds": 285.3466,
+    "peak_memory_mb": 1166.41
+  },
+  "multiprocessing_4w": {
+    "time_seconds": 299.1839,
+    "peak_memory_mb": 1177.69
+  },
+  "multiprocessing_8w": {
+    "time_seconds": 300.8463,
+    "peak_memory_mb": 1187.75
+  },
+  "threading_2w": {
+    "time_seconds": 319.1547,
+    "peak_memory_mb": 2102.16
+  },
+  "threading_4w": {
+    "time_seconds": 329.2881,
+    "peak_memory_mb": 2639.89
+  },
+  "threading_8w": {
+    "time_seconds": 338.2144,
+    "peak_memory_mb": 3436.12
+  }
+}

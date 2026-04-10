@@ -1,0 +1,22 @@
+{
+  "numpy_baseline": {
+    "time_seconds": 0.7225,
+    "peak_memory_mb": 662.25
+  },
+  "numpy_vectorized": {
+    "time_seconds": 0.0432,
+    "peak_memory_mb": 662.47
+  },
+  "numpy_vectorized_prenorm": {
+    "time_seconds": 0.0102,
+    "peak_memory_mb": 665.72
+  },
+  "numba_jit": {
+    "time_seconds": 0.085,
+    "peak_memory_mb": 665.72
+  },
+  "faiss_flat": {
+    "time_seconds": 0.0151,
+    "peak_memory_mb": 665.74
+  }
+}

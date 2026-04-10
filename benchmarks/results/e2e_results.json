@@ -1,0 +1,22 @@
+{
+  "baseline_e2e": {
+    "time_seconds": 1011.2885,
+    "peak_memory_mb": 8796.25
+  },
+  "trad_python_opt_e2e": {
+    "time_seconds": 4357.1887,
+    "peak_memory_mb": 10069.69
+  },
+  "optimized_e2e": {
+    "time_seconds": 339.0226,
+    "peak_memory_mb": 11053.65
+  },
+  "speedup_trad_python": {
+    "time_seconds": 0.23,
+    "peak_memory_mb": 0.0
+  },
+  "speedup_fully_optimized": {
+    "time_seconds": 2.98,
+    "peak_memory_mb": 0.0
+  }
+}

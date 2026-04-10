@@ -1,0 +1,26 @@
+Stage,Method,Time (s),Memory (MB),Speedup
+Stage 1,sequential,299.35,1431.0,1.00x
+Stage 1,multiprocessing_2w,285.35,1166.4,1.05x
+Stage 1,multiprocessing_4w,299.18,1177.7,1.00x
+Stage 1,multiprocessing_8w,300.85,1187.8,1.00x
+Stage 1,threading_2w,319.15,2102.2,0.94x
+Stage 1,threading_4w,329.29,2639.9,0.91x
+Stage 1,threading_8w,338.21,3436.1,0.89x
+Stage 2,cpu_sequential,1.4,1855.3,1.00x
+Stage 2,cpu_batched_bs16,2.48,1970.7,0.56x
+Stage 2,cpu_batched_bs32,2.09,1984.4,0.67x
+Stage 2,cpu_batched_bs64,1.74,2019.6,0.80x
+Stage 2,cpu_batched_bs128,1.62,2086.9,0.86x
+Stage 2,gpu_batched_bs32,0.18,2024.8,7.59x
+Stage 2,gpu_batched_bs64,0.12,1981.0,12.09x
+Stage 2,gpu_batched_bs128,0.09,1981.0,15.30x
+Stage 2,gpu_amp_bs64,0.17,1997.9,8.01x
+Stage 3,numpy_baseline,0.72,662.2,1.00x
+Stage 3,numpy_vectorized,0.04,662.5,16.72x
+Stage 3,numpy_vectorized_prenorm,0.01,665.7,70.83x
+Stage 3,numba_jit,0.09,665.7,8.50x
+Stage 3,faiss_flat,0.02,665.7,47.85x
+Stage 4,gen_float32_cpu,138.11,10440.3,1.00x
+Stage 4,gen_float16_cpu,263.73,10439.5,0.52x
+Stage 4,gen_float16_gpu,10.5,10617.7,13.15x
+Stage 4,gen_4bit_gpu,12.47,10616.8,11.07x
