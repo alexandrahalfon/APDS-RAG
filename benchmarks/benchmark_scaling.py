@@ -250,6 +250,7 @@ def run_corpus_scaling(
     if corpus_sizes is None:
         corpus_sizes = [5, 10, 25, 50]
 
+    from baseline.doc_processing_local import process_pdf_complete_local
     from baseline.embedding_step_local import generate_embeddings_baseline
     from baseline.similarity_search import search_similar_chunks as baseline_search
     from optimized.stage1_ingestion.parallel_ingestion import parallel_ingest, process_single_pdf
@@ -259,6 +260,24 @@ def run_corpus_scaling(
         search_similar_vectorized as vectorized_search,
         normalize_embeddings,
     )
+
+    def _ingest_pdfplumber(pdf_subset):
+        """Sequential ingest using pdfplumber (slow baseline)."""
+        chunks = []
+        for path in pdf_subset:
+            try:
+                doc = process_pdf_complete_local(path)
+                for page in doc['pages']:
+                    for para in page['paragraphs']:
+                        chunks.append({
+                            'page': page['page_number'],
+                            'text': para['text'],
+                            'word_count': para['word_count'],
+                            'source_file': doc['file_name'],
+                        })
+            except Exception as e:
+                print(f"    ⚠ Error: {Path(path).name}: {e}")
+        return [{**c, 'id': i} for i, c in enumerate(chunks)]
 
     all_pdfs = sorted(str(p) for p in Path(pdf_folder).glob("*.pdf"))
     if not all_pdfs:
@@ -289,14 +308,9 @@ def run_corpus_scaling(
         pdf_subset = all_pdfs[:n_pdfs]
         print(f"  {n_pdfs} PDFs:")
 
-        # --- Baseline: sequential ingest + sequential embed + for-loop search ---
+        # --- Baseline: pdfplumber sequential ingest + sequential embed + for-loop search ---
         start = time.perf_counter()
-        chunks = [
-            {**c, 'id': i}
-            for i, c in enumerate(
-                chunk for path in pdf_subset for chunk in process_single_pdf(path)
-            )
-        ]
+        chunks = _ingest_pdfplumber(pdf_subset)
         if chunks:
             chunks = generate_embeddings_baseline(chunks)
             embs = np.array([c['embedding'] for c in chunks], dtype=np.float32)
@@ -308,14 +322,9 @@ def run_corpus_scaling(
         results["baseline"].append(round(t_baseline, 4))
         print(f"    baseline={t_baseline:.2f}s ({len(chunks)} chunks)")
 
-        # --- Trad Python opt: sequential ingest + sequential embed + vectorized search ---
+        # --- Trad Python opt: pdfplumber ingest + sequential embed + vectorized search ---
         start = time.perf_counter()
-        chunks = [
-            {**c, 'id': i}
-            for i, c in enumerate(
-                chunk for path in pdf_subset for chunk in process_single_pdf(path)
-            )
-        ]
+        chunks = _ingest_pdfplumber(pdf_subset)
         if chunks:
             chunks = generate_embeddings_baseline(chunks)
             embs = np.array([c['embedding'] for c in chunks], dtype=np.float32)
