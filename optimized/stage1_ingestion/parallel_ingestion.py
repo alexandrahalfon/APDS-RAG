@@ -1,4 +1,9 @@
-"""Parallel PDF ingestion using multiprocessing."""
+"""Parallel PDF ingestion using multiprocessing + PyMuPDF.
+
+Combines two optimizations:
+  1. PyMuPDF (C library) instead of pdfplumber (Python layout engine)
+  2. multiprocessing.Pool for parallel file processing
+"""
 
 import multiprocessing as mp
 from itertools import chain
@@ -8,7 +13,7 @@ from typing import List, Dict, Optional
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from baseline.doc_processing_local import process_pdf_complete_local
+from optimized.stage1_ingestion.pymupdf_ingestion import process_pdf_pymupdf
 
 
 def process_single_pdf(pdf_path: str) -> List[Dict]:
@@ -21,7 +26,7 @@ def process_single_pdf(pdf_path: str) -> List[Dict]:
         List of chunk dicts with id, page, text, word_count, source_file.
     """
     try:
-        doc = process_pdf_complete_local(pdf_path)
+        doc = process_pdf_pymupdf(pdf_path)
     except Exception as e:
         print(f"  ⚠ Error processing {Path(pdf_path).name}: {e}")
         return []
