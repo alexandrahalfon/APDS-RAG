@@ -98,16 +98,20 @@ def run_stage4_benchmark(num_queries: int = 5) -> None:
 
     import torch
     has_gpu = torch.cuda.is_available()
+    has_4bit = False
     if has_gpu:
         _load_model(DEFAULT_MODEL, "float16", "cuda")
+        # Only attempt 4-bit if bitsandbytes is actually installed.
+        # The fallback (float16 pretending to be 4-bit) causes device
+        # mismatch errors, so skip it entirely when unavailable.
         try:
+            import bitsandbytes  # noqa: F401
             _load_model(DEFAULT_MODEL, "4bit", "cuda")
             has_4bit = True
+        except ImportError:
+            print("  ⚠ Skipping 4-bit benchmark (bitsandbytes not installed)")
         except Exception:
-            has_4bit = False
-            print("  ⚠ 4-bit model unavailable (bitsandbytes not installed)")
-    else:
-        has_4bit = False
+            print("  ⚠ 4-bit model failed to load, skipping")
 
     print()
     profiler = PipelineProfiler()

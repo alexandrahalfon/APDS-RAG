@@ -109,7 +109,12 @@ def _baseline_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
         # Stage 3: search
         results = search_similar_chunks(embeddings[idx], embeddings, metadata, top_k=5)
         # Stage 4: generate (float32 baseline)
-        generate_answer_baseline(sample_queries[i], results[:3], max_new_tokens=64)
+        # Truncate chunk text to ~300 words each to stay within TinyLlama's
+        # 2048 token context window and avoid slow generation on overflow.
+        truncated = [
+            {**r, 'text': ' '.join(r['text'].split()[:300])} for r in results[:3]
+        ]
+        generate_answer_baseline(sample_queries[i], truncated, max_new_tokens=64)
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +148,10 @@ def _trad_python_opt_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     for i, idx in enumerate(indices):
         # Stage 3: vectorized search
         top_indices, _ = search_similar_vectorized(embeddings[idx], embeddings_normed, top_k=5)
-        context_chunks = [metadata[j] for j in top_indices]
+        context_chunks = [
+            {**metadata[j], 'text': ' '.join(metadata[j]['text'].split()[:300])}
+            for j in top_indices
+        ]
         # Stage 4: generate (float16 — dtype optimization)
         generate_answer_optimized(
             sample_queries[i], context_chunks,
@@ -182,7 +190,10 @@ def _optimized_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     for i, idx in enumerate(indices):
         # Stage 3: FAISS search
         top_indices, _ = index.search(embeddings[idx], top_k=5)
-        context_chunks = [metadata[j] for j in top_indices if j >= 0]
+        context_chunks = [
+            {**metadata[j], 'text': ' '.join(metadata[j]['text'].split()[:300])}
+            for j in top_indices if j >= 0
+        ]
         # Stage 4: generate (float16, best available device)
         generate_answer_optimized(
             sample_queries[i], context_chunks,

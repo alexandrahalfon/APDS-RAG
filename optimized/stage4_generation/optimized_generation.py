@@ -93,6 +93,13 @@ def _load_model(
     if use_device == "cuda" and not skip_move:
         model = model.to("cuda")
 
+    # Verify the model is actually on the expected device (guards against
+    # silent OOM or failed .to() calls that caused device mismatch errors).
+    actual_device = str(next(model.parameters()).device)
+    if "cuda" in use_device and "cuda" not in actual_device:
+        print(f"  ⚠ Model failed to move to {use_device}, staying on {actual_device}")
+        use_device = actual_device
+
     param_count = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"✓ Generation model loaded ({optimization}, {param_count:.0f}M params, {use_device})")
 
