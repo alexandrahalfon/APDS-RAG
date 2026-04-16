@@ -35,6 +35,7 @@ line-profiler
 matplotlib
 pandas
 seaborn
+tabulate  # for pandas.to_markdown() output in the report table generator
 
 # BEIR retrieval benchmarks (provides corpus, queries, qrels, evaluation)
 # Pulls in pytrec_eval which needs a C compiler — wheels are usually

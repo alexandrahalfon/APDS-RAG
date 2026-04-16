@@ -88,27 +88,190 @@ def plot_speedup_summary(all_results: Dict[str, str], output_path: str) -> None:
 def create_results_table(all_results: Dict[str, str]) -> pd.DataFrame:
     """Create a formatted DataFrame summarizing all benchmark results.
 
+    Handles two structures:
+      1. Flat (stage*_results.json, e2e_results.json) — {method: {time_seconds, peak_memory_mb}}
+      2. Nested (beir_results*.json) — {dataset: {tiers: {tier: {...}}}}
+
     Args:
-        all_results: Dict mapping stage name to results JSON path.
+        all_results: Dict mapping logical group name to results JSON path.
 
     Returns:
-        DataFrame with columns: Stage, Method, Time (s), Memory (MB).
+        DataFrame with columns: Stage, Method, Time (s), Memory (MB), plus
+        optional quality columns (NDCG@10, Recall@10) when BEIR data is present.
     """
     rows = []
     for stage_name, results_file in all_results.items():
         data = _load_results(results_file)
+
+        # BEIR nested structure — dataset → tiers → metrics
+        if any(isinstance(v, dict) and "tiers" in v for v in data.values()):
+            for dataset, res in data.items():
+                if not isinstance(res, dict) or "tiers" not in res:
+                    continue
+                for tier, m in res["tiers"].items():
+                    rows.append({
+                        "Stage": f"{stage_name}:{dataset}",
+                        "Method": tier,
+                        "Time (s)": m.get("total_time_s", 0),
+                        "Memory (MB)": m.get("peak_memory_mb", 0),
+                        "NDCG@10": m.get("ndcg@10", None),
+                        "Recall@10": m.get("recall@10", None),
+                        "Speedup": m.get("speedup_vs_baseline", None),
+                    })
+            continue
+
+        # Flat structure — method → {time_seconds, peak_memory_mb}
         for method, metrics in data.items():
-            if method.startswith('speedup'):
+            if method.startswith('speedup') or not isinstance(metrics, dict):
                 continue
             rows.append({
-                'Stage': stage_name,
-                'Method': method,
-                'Time (s)': metrics['time_seconds'],
-                'Memory (MB)': metrics['peak_memory_mb'],
+                "Stage": stage_name,
+                "Method": method,
+                "Time (s)": metrics.get("time_seconds", 0),
+                "Memory (MB)": metrics.get("peak_memory_mb", 0),
+                "NDCG@10": None,
+                "Recall@10": None,
+                "Speedup": None,
+            })
+
+    return pd.DataFrame(rows)
+
+
+def create_beir_table(
+    results_file: str, output_dir: str = None,
+) -> pd.DataFrame:
+    """Build a BEIR-specific table keyed by (dataset, tier) for the report.
+
+    Writes:
+      - beir_table.csv   — raw CSV (for spreadsheet import)
+      - beir_table.md    — GitHub-flavored markdown (paste into report)
+      - beir_table.tex   — LaTeX tabular (if you use LaTeX)
+
+    Args:
+        results_file: Path to a beir_results*.json file.
+        output_dir: Where to write the table files (defaults to same dir as
+            the results file).
+
+    Returns:
+        The DataFrame.
+    """
+    data = _load_results(results_file)
+    rows = []
+    for dataset, res in data.items():
+        if not isinstance(res, dict) or "tiers" not in res:
+            continue
+        n_docs = res.get("n_corpus", 0)
+        for tier, m in res["tiers"].items():
+            rows.append({
+                "Dataset": dataset,
+                "Corpus size": f"{n_docs:,}",
+                "Tier": tier,
+                "Index (s)": round(m.get("index_time_s", 0), 2),
+                "Search (s)": round(m.get("search_time_s", 0), 2),
+                "Total (s)": round(m.get("total_time_s", 0), 2),
+                "Speedup": (f"{m['speedup_vs_baseline']:.2f}x"
+                            if "speedup_vs_baseline" in m else "—"),
+                "NDCG@10": f"{m.get('ndcg@10', 0):.3f}",
+                "Recall@10": f"{m.get('recall@10', 0):.3f}",
+                "MAP@10": f"{m.get('map@10', 0):.3f}",
             })
 
     df = pd.DataFrame(rows)
+    if df.empty:
+        print(f"⚠ No BEIR data in {results_file}")
+        return df
+
+    out_dir = Path(output_dir) if output_dir else Path(results_file).parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    stem = Path(results_file).stem  # e.g. "beir_results" or "beir_results_gpu"
+    df.to_csv(out_dir / f"{stem}_table.csv", index=False)
+    with open(out_dir / f"{stem}_table.md", "w") as f:
+        f.write(df.to_markdown(index=False))
+    with open(out_dir / f"{stem}_table.tex", "w") as f:
+        f.write(df.to_latex(index=False, escape=False))
+
+    print(f"✓ Saved {stem}_table.{{csv,md,tex}} in {out_dir}")
+    print(f"\n{df.to_string(index=False)}\n")
     return df
+
+
+def plot_beir_cpu_vs_gpu(
+    cpu_file: str, gpu_file: str, output_path: str,
+) -> None:
+    """Side-by-side CPU vs GPU comparison for the same BEIR datasets + tiers.
+
+    Produces a 2-panel chart:
+      Left  — total time per (dataset, tier) — CPU bars next to GPU bars
+      Right — speedup of GPU over CPU at each (dataset, tier)
+
+    Args:
+        cpu_file: Path to CPU BEIR results JSON.
+        gpu_file: Path to GPU BEIR results JSON.
+        output_path: Where to save the figure.
+    """
+    cpu = _load_results(cpu_file)
+    gpu = _load_results(gpu_file)
+
+    datasets = [d for d in cpu if d in gpu and "tiers" in cpu[d] and "tiers" in gpu[d]]
+    if not datasets:
+        print(f"⚠ No overlapping datasets between {cpu_file} and {gpu_file}")
+        return
+
+    tier_order = list(cpu[datasets[0]]["tiers"].keys())
+    n_tiers = len(tier_order)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+
+    # --- Left: paired CPU/GPU bars for each (dataset, tier) ---
+    x = np.arange(len(datasets))
+    # 2*n_tiers bars per dataset group (CPU, GPU alternating), packed in 0.8 width
+    bar_w = 0.8 / (2 * n_tiers)
+    colors_cpu = {"baseline": "#c0392b", "trad_python_opt": "#e67e22", "optimized": "#2874a6"}
+    colors_gpu = {"baseline": "#e74c3c", "trad_python_opt": "#f39c12", "optimized": "#3498db"}
+
+    for i, tier in enumerate(tier_order):
+        cpu_times = [cpu[d]["tiers"][tier]["total_time_s"] for d in datasets]
+        gpu_times = [gpu[d]["tiers"][tier]["total_time_s"] for d in datasets]
+        off_cpu = (2 * i - n_tiers) * bar_w + bar_w / 2
+        off_gpu = off_cpu + bar_w
+        ax1.bar(x + off_cpu, cpu_times, bar_w,
+                label=f"{tier} (CPU)", color=colors_cpu.get(tier, "#888"))
+        ax1.bar(x + off_gpu, gpu_times, bar_w,
+                label=f"{tier} (GPU)", color=colors_gpu.get(tier, "#444"))
+
+    ax1.set_yscale("log")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(
+        [f"{d}\n({cpu[d]['n_corpus']:,})" for d in datasets],
+        rotation=15, ha="right",
+    )
+    ax1.set_ylabel("Total time (seconds, log scale)")
+    ax1.set_title("CPU vs GPU — Total Pipeline Time")
+    ax1.legend(ncol=2, fontsize=8)
+    ax1.grid(True, alpha=0.3, axis="y")
+
+    # --- Right: GPU speedup (CPU / GPU) per tier per dataset ---
+    for tier in tier_order:
+        speedups = []
+        for d in datasets:
+            c = cpu[d]["tiers"][tier]["total_time_s"]
+            g = gpu[d]["tiers"][tier]["total_time_s"]
+            speedups.append(c / g if g > 0 else 0)
+        ax2.plot(datasets, speedups, "o-",
+                 label=tier, color=colors_gpu.get(tier, "#444"), linewidth=2)
+
+    ax2.set_xticklabels(datasets, rotation=15, ha="right")
+    ax2.set_ylabel("GPU speedup over CPU (x)")
+    ax2.set_title("GPU Speedup over CPU by Tier")
+    ax2.axhline(y=1.0, color="gray", linestyle="--", alpha=0.5)
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"✓ Saved {output_path}")
 
 
 def generate_all_visualizations(results_dir: str = './benchmarks/results',
@@ -159,6 +322,32 @@ def generate_all_visualizations(results_dir: str = './benchmarks/results',
     scaling_corpus = results_path / 'scaling_corpus.json'
     if scaling_corpus.exists():
         plot_corpus_scaling(str(scaling_corpus), str(output_path / 'scaling_corpus.png'))
+
+    # --- BEIR charts + tables ---
+    # Registers any beir_results*.json (beir_results.json, beir_results_gpu.json, etc.)
+    beir_files = sorted(results_path.glob('beir_results*.json'))
+    for beir_file in beir_files:
+        stem = beir_file.stem
+        all_results[stem] = str(beir_file)
+        plot_beir_results(str(beir_file), str(output_path / f'{stem}.png'))
+        create_beir_table(str(beir_file), str(output_path))
+
+    # If both CPU and GPU BEIR runs exist, produce the side-by-side chart
+    cpu_beir = results_path / 'beir_results.json'
+    gpu_beir = results_path / 'beir_results_gpu.json'
+    if cpu_beir.exists() and gpu_beir.exists():
+        plot_beir_cpu_vs_gpu(
+            str(cpu_beir), str(gpu_beir),
+            str(output_path / 'beir_cpu_vs_gpu.png'),
+        )
+
+    # Re-generate the combined CSV now that BEIR is included
+    if all_results:
+        df = create_results_table(all_results)
+        df.to_csv(str(output_path / 'results_table.csv'), index=False)
+        with open(output_path / 'results_table.md', 'w') as f:
+            f.write(df.to_markdown(index=False))
+        print(f"✓ Saved combined results_table.{{csv,md}}")
 
 
 # ---------------------------------------------------------------------------
@@ -390,10 +579,3 @@ def plot_beir_results(results_file: str, output_path: str) -> None:
 
 if __name__ == '__main__':
     generate_all_visualizations()
-
-    # Also generate BEIR plot if those results exist
-    beir_file = Path('./benchmarks/results/beir_results.json')
-    if beir_file.exists():
-        out_dir = Path('./benchmarks/visualizations')
-        out_dir.mkdir(parents=True, exist_ok=True)
-        plot_beir_results(str(beir_file), str(out_dir / 'beir_results.png'))
