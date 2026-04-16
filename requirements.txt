@@ -36,6 +36,11 @@ matplotlib
 pandas
 seaborn
 
+# BEIR retrieval benchmarks (provides corpus, queries, qrels, evaluation)
+# Pulls in pytrec_eval which needs a C compiler — wheels are usually
+# prebuilt for common platforms.
+beir
+
 # PDF generation (data/generate_corpus.py)
 reportlab
 

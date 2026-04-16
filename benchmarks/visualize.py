@@ -322,5 +322,78 @@ def plot_corpus_scaling(results_file: str, output_path: str) -> None:
     print(f"✓ Saved {output_path}")
 
 
+def plot_beir_results(results_file: str, output_path: str) -> None:
+    """Two-panel chart: speed (left) and retrieval quality (right) per dataset.
+
+    Speed panel groups bars by tier within each dataset (log y-axis so a
+    100× speedup is still visible alongside a 2× speedup). Quality panel
+    overlays NDCG@10 across tiers — flat lines confirm the optimization
+    preserved retrieval quality.
+
+    Args:
+        results_file: Path to beir_results.json.
+        output_path: Where to save the figure.
+    """
+    data = _load_results(results_file)
+    datasets = [name for name, res in data.items() if "tiers" in res]
+    if not datasets:
+        print(f"⚠ No usable datasets in {results_file}")
+        return
+
+    # Tier order is preserved from the first dataset (baseline → trad → optimized)
+    tier_order = list(data[datasets[0]]["tiers"].keys())
+    colors = {
+        "baseline": "#d62728",
+        "trad_python_opt": "#ff7f0e",
+        "optimized": "#1f77b4",
+    }
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+
+    x = np.arange(len(datasets))
+    bar_width = 0.8 / len(tier_order)
+
+    # --- Left panel: total time per tier per dataset (log scale) ---
+    for i, tier in enumerate(tier_order):
+        times = [data[d]["tiers"][tier]["total_time_s"] for d in datasets]
+        offset = (i - (len(tier_order) - 1) / 2) * bar_width
+        ax1.bar(x + offset, times, bar_width, label=tier, color=colors.get(tier))
+
+    ax1.set_yscale("log")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(
+        [f"{d}\n({data[d]['n_corpus']:,} docs)" for d in datasets],
+        rotation=15, ha="right",
+    )
+    ax1.set_ylabel("Total time (seconds, log scale)")
+    ax1.set_title("Pipeline Speed by Dataset")
+    ax1.legend()
+    ax1.grid(True, alpha=0.3, axis="y")
+
+    # --- Right panel: NDCG@10 per tier (should be ~flat across tiers) ---
+    for tier in tier_order:
+        ndcgs = [data[d]["tiers"][tier]["ndcg@10"] for d in datasets]
+        ax2.plot(datasets, ndcgs, "o-", label=tier, color=colors.get(tier), linewidth=2)
+
+    ax2.set_xticklabels(datasets, rotation=15, ha="right")
+    ax2.set_ylabel("NDCG@10")
+    ax2.set_title("Retrieval Quality by Dataset (flat = optimization preserved quality)")
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    ax2.set_ylim(0, 1)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"✓ Saved {output_path}")
+
+
 if __name__ == '__main__':
     generate_all_visualizations()
+
+    # Also generate BEIR plot if those results exist
+    beir_file = Path('./benchmarks/results/beir_results.json')
+    if beir_file.exists():
+        out_dir = Path('./benchmarks/visualizations')
+        out_dir.mkdir(parents=True, exist_ok=True)
+        plot_beir_results(str(beir_file), str(out_dir / 'beir_results.png'))
