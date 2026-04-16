@@ -12,7 +12,6 @@ python-dotenv
 # Numerical & ML
 numpy
 torch
-torchvision
 sentence-transformers<4
 transformers<5
 accelerate
@@ -43,5 +42,7 @@ reportlab
 # Optional: GPU support (uncomment if GPU available)
 # faiss-gpu
 
-# 4-bit quantization (requires GPU + CUDA)
-bitsandbytes
+# 4-bit quantization (CUDA-only — no Mac wheels exist; runtime falls back
+# to float16 if missing). Marker keeps `pip install -r requirements.txt`
+# from failing on macOS / non-x86_64 Linux.
+bitsandbytes; sys_platform == "linux" and platform_machine == "x86_64"

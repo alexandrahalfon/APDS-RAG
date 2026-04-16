@@ -32,6 +32,19 @@ pip install -r requirements.txt
 python -c "import nltk; nltk.download('punkt')"
 ```
 
+### Platform notes
+
+- **macOS** — `bitsandbytes` (4-bit quantization) is CUDA-only and is
+  marked to skip on macOS, so `pip install` succeeds. The Stage 4
+  benchmark detects the missing library and skips the 4-bit tier
+  automatically; everything else runs normally on CPU (or MPS if you
+  install a torch build with Metal support).
+- **Linux + GPU** — `bitsandbytes` installs by default. For CUDA, install
+  the matching torch wheel from `https://pytorch.org/get-started/locally/`
+  *before* running `pip install -r requirements.txt`.
+- **Apple Silicon (M1/M2/M3)** — use Python 3.10–3.12 for prebuilt
+  `numba` and `faiss-cpu` wheels (3.13 wheels are still rolling out).
+
 ## Usage
 
 ### Process documents
