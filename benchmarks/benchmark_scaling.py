@@ -130,11 +130,62 @@ def run_search_scaling(
 # 2. Generation scaling: time vs output token length
 # ---------------------------------------------------------------------------
 
+def _time_forced_generation(
+    model,
+    tokenizer,
+    prompt_text: str,
+    max_new_tokens: int,
+    num_queries: int,
+    device: str,
+) -> float:
+    """Time `num_queries` forward generations that always produce exactly
+    `max_new_tokens` new tokens.
+
+    Using `min_new_tokens=max_new_tokens` disables early-EOS stopping, which
+    is essential for a token-scaling benchmark — otherwise a well-behaved
+    model finishes its answer around ~60 tokens and runtime flattens at
+    larger token counts (masking the O(n) decode cost we're trying to measure).
+
+    Args:
+        model: HuggingFace causal-LM.
+        tokenizer: matching tokenizer.
+        prompt_text: already-templated input string.
+        max_new_tokens: number of new tokens to generate (also the minimum).
+        num_queries: repetitions.
+        device: 'cpu' or 'cuda' — where to put input tensors.
+
+    Returns:
+        Total seconds for num_queries generations.
+    """
+    import torch
+
+    inputs = tokenizer(
+        prompt_text, return_tensors="pt", truncation=True,
+        max_length=model.config.max_position_embeddings - max_new_tokens,
+    ).to(device)
+
+    start = time.perf_counter()
+    for _ in range(num_queries):
+        with torch.inference_mode():
+            model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                min_new_tokens=max_new_tokens,  # force full-length generation
+                do_sample=False,
+                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+            )
+    return time.perf_counter() - start
+
+
 def run_generation_scaling(
     token_counts: List[int] = None,
     num_queries: int = 3,
 ) -> Dict:
     """Benchmark generation time vs output length.
+
+    Generation is forced to produce exactly `max_new_tokens` tokens per call
+    (via `min_new_tokens=max_new_tokens`) so the measurement reflects true
+    per-token cost rather than how early the model happens to emit EOS.
 
     Args:
         token_counts: List of max_new_tokens values to test.
@@ -146,9 +197,11 @@ def run_generation_scaling(
     if token_counts is None:
         token_counts = [32, 64, 128, 256]
 
-    from baseline.generation_step_local import generate_answer_baseline, get_generation_model
+    from baseline.generation_step_local import (
+        get_generation_model, build_rag_prompt,
+    )
     from optimized.stage4_generation.optimized_generation import (
-        generate_answer_optimized, _load_model, DEFAULT_MODEL,
+        _load_model, DEFAULT_MODEL,
     )
 
     results = {
@@ -164,10 +217,10 @@ def run_generation_scaling(
 
     # Pre-load models
     print("  Pre-loading generation models...")
-    get_generation_model()
-    _load_model(DEFAULT_MODEL, "float16", "cpu")
+    f32_model, f32_tok = get_generation_model()
+    f16_cpu_model, f16_cpu_tok, f16_cpu_dev = _load_model(DEFAULT_MODEL, "float16", "cpu")
     if has_gpu:
-        _load_model(DEFAULT_MODEL, "float16", "cuda")
+        f16_gpu_model, f16_gpu_tok, f16_gpu_dev = _load_model(DEFAULT_MODEL, "float16", "cuda")
 
     # Synthetic context
     context_chunks = [
@@ -180,39 +233,41 @@ def run_generation_scaling(
     ]
     query = "What are the main findings of this study?"
 
+    # Build the chat-templated prompt once — same input across all tiers so
+    # the only variable being measured is decode cost at different token counts.
+    prompt = build_rag_prompt(query, context_chunks)
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant. Answer based on the provided context. Be concise."},
+        {"role": "user", "content": prompt},
+    ]
+    prompt_text = f32_tok.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True,
+    )
+
     print(f"\n=== Generation Scaling Benchmark ({num_queries} queries per token count) ===\n")
 
     for max_tokens in token_counts:
         print(f"  max_tokens={max_tokens:>4d}: ", end="", flush=True)
 
         # float32 CPU
-        start = time.perf_counter()
-        for _ in range(num_queries):
-            generate_answer_baseline(query, context_chunks, max_new_tokens=max_tokens)
-        t = time.perf_counter() - start
+        t = _time_forced_generation(
+            f32_model, f32_tok, prompt_text, max_tokens, num_queries, "cpu",
+        )
         results["gen_float32_cpu"].append(round(t, 4))
         print(f"f32={t:.2f}s  ", end="", flush=True)
 
         # float16 CPU
-        start = time.perf_counter()
-        for _ in range(num_queries):
-            generate_answer_optimized(
-                query, context_chunks, max_new_tokens=max_tokens,
-                optimization="float16", device="cpu",
-            )
-        t = time.perf_counter() - start
+        t = _time_forced_generation(
+            f16_cpu_model, f16_cpu_tok, prompt_text, max_tokens, num_queries, f16_cpu_dev,
+        )
         results["gen_float16_cpu"].append(round(t, 4))
         print(f"f16_cpu={t:.2f}s  ", end="", flush=True)
 
         # float16 GPU
         if has_gpu:
-            start = time.perf_counter()
-            for _ in range(num_queries):
-                generate_answer_optimized(
-                    query, context_chunks, max_new_tokens=max_tokens,
-                    optimization="float16", device="cuda",
-                )
-            t = time.perf_counter() - start
+            t = _time_forced_generation(
+                f16_gpu_model, f16_gpu_tok, prompt_text, max_tokens, num_queries, f16_gpu_dev,
+            )
             results["gen_float16_gpu"].append(round(t, 4))
             print(f"f16_gpu={t:.2f}s", end="")
 

@@ -7,13 +7,17 @@ Three-tier progression (now includes generation — Stage 4):
                          (isolates the effect of vectorization alone)
   3. Fully optimized   — parallel ingest, batched embed, FAISS search,
                          float16 generation (+ GPU if available)
+
+All three tiers feed the generator the same number of top-k chunks (GEN_TOP_K)
+so the generation workload is identical across tiers — differences in runtime
+reflect the search/ingestion/embedding tiers, not how many chunks each tier
+happened to stuff into the prompt.
 """
 
 import os; os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # noqa: E702
 import torch  # noqa: E402, F401 — must load before pdfplumber (macOS segfault)
 
 import sys
-import json
 import numpy as np
 from pathlib import Path
 
@@ -43,6 +47,15 @@ from optimized.stage4_generation.optimized_generation import generate_answer_opt
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
+# Number of retrieved chunks fed to the generator. Identical across tiers so
+# the generation workload is apples-to-apples (TinyLlama's 2048-token context
+# fills up ~3 × 300 words, so more chunks would hit truncation and skew times).
+GEN_TOP_K = 3
+
+# Search top-k. The search layer returns this many candidates; only the first
+# GEN_TOP_K are passed to generation.
+SEARCH_TOP_K = 5
 
 _SAMPLE_QUERIES = [
     "What are the main findings?",
@@ -120,12 +133,12 @@ def _baseline_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     sample_queries = _get_sample_queries(len(indices))
     for i, idx in enumerate(indices):
         # Stage 3: search
-        results = search_similar_chunks(embeddings[idx], embeddings, metadata, top_k=5)
+        results = search_similar_chunks(embeddings[idx], embeddings, metadata, top_k=SEARCH_TOP_K)
         # Stage 4: generate (float32 baseline)
         # Truncate chunk text to ~300 words each to stay within TinyLlama's
         # 2048 token context window and avoid slow generation on overflow.
         truncated = [
-            {**r, 'text': ' '.join(r['text'].split()[:300])} for r in results[:3]
+            {**r, 'text': ' '.join(r['text'].split()[:300])} for r in results[:GEN_TOP_K]
         ]
         generate_answer_baseline(sample_queries[i], truncated, max_new_tokens=64)
 
@@ -161,10 +174,15 @@ def _trad_python_opt_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     sample_queries = _get_sample_queries(len(indices))
     for i, idx in enumerate(indices):
         # Stage 3: vectorized search
-        top_indices, _ = search_similar_vectorized(embeddings[idx], embeddings_normed, top_k=5)
+        top_indices, _ = search_similar_vectorized(
+            embeddings[idx], embeddings_normed, top_k=SEARCH_TOP_K,
+        )
+        # Match the baseline: pass top GEN_TOP_K chunks to generation so the
+        # generation workload is identical and any difference is attributable
+        # to the vectorized search (not to a larger prompt).
         context_chunks = [
             {**metadata[j], 'text': ' '.join(metadata[j]['text'].split()[:300])}
-            for j in top_indices
+            for j in top_indices[:GEN_TOP_K]
         ]
         # Stage 4: generate (same float32 baseline — isolates search improvement)
         generate_answer_baseline(sample_queries[i], context_chunks, max_new_tokens=64)
@@ -200,10 +218,13 @@ def _optimized_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
     sample_queries = _get_sample_queries(len(indices))
     for i, idx in enumerate(indices):
         # Stage 3: FAISS search
-        top_indices, _ = index.search(embeddings[idx], top_k=5)
+        top_indices, _ = index.search(embeddings[idx], top_k=SEARCH_TOP_K)
+        # Match the baseline: pass top GEN_TOP_K chunks to generation so the
+        # generation workload is identical across all three tiers.
+        valid_indices = [j for j in top_indices if j >= 0][:GEN_TOP_K]
         context_chunks = [
             {**metadata[j], 'text': ' '.join(metadata[j]['text'].split()[:300])}
-            for j in top_indices if j >= 0
+            for j in valid_indices
         ]
         # Stage 4: generate (float16, best available device)
         generate_answer_optimized(
