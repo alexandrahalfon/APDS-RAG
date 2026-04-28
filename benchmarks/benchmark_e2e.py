@@ -33,7 +33,7 @@ from baseline.generation_step_local import generate_answer_baseline
 
 # Traditional Python optimization imports
 from optimized.stage3_search.numpy_vectorized import (
-    search_similar_vectorized,
+    search_similar_vectorized_prenorm,
     normalize_embeddings,
 )
 
@@ -173,8 +173,8 @@ def _trad_python_opt_pipeline(pdf_paths: list, num_queries: int = 10) -> None:
 
     sample_queries = _get_sample_queries(len(indices))
     for i, idx in enumerate(indices):
-        # Stage 3: vectorized search
-        top_indices, _ = search_similar_vectorized(
+        # Stage 3: vectorized search (prenorm variant — skips redundant norm computation)
+        top_indices, _ = search_similar_vectorized_prenorm(
             embeddings[idx], embeddings_normed, top_k=SEARCH_TOP_K,
         )
         # Match the baseline: pass top GEN_TOP_K chunks to generation so the
