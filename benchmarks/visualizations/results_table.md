@@ -1,0 +1,31 @@
+| Stage   | Method                   |   Time (s) |   Memory (MB) | NDCG@10   | Recall@10   | Speedup   |
+|:--------|:-------------------------|-----------:|--------------:|:----------|:------------|:----------|
+| stage1  | pdfplumber_sequential    |    56.242  |        719.42 |           |             |           |
+| stage1  | pymupdf_sequential       |     0.873  |        713.69 |           |             |           |
+| stage1  | pymupdf_mp_2w            |     0.9265 |        715.53 |           |             |           |
+| stage1  | pymupdf_mp_4w            |     0.918  |        717.06 |           |             |           |
+| stage1  | pymupdf_mp_8w            |     1.6325 |        717.07 |           |             |           |
+| stage1  | pymupdf_thread_2w        |     1.5971 |        717.12 |           |             |           |
+| stage1  | pymupdf_thread_4w        |     1.6036 |        719.35 |           |             |           |
+| stage1  | pymupdf_thread_8w        |     0.9403 |        723.77 |           |             |           |
+| stage2  | cpu_sequential           |    49.4391 |       1112.05 |           |             |           |
+| stage2  | cpu_batched_bs16         |    46.2545 |       1237.13 |           |             |           |
+| stage2  | cpu_batched_bs32         |    49.1209 |       1375.43 |           |             |           |
+| stage2  | cpu_batched_bs64         |    48.1086 |       1597.21 |           |             |           |
+| stage2  | cpu_batched_bs128        |    52.1108 |       1783.32 |           |             |           |
+| stage2  | gpu_batched_bs32         |     3.8421 |       1492.27 |           |             |           |
+| stage2  | gpu_batched_bs64         |     2.3645 |       1493.89 |           |             |           |
+| stage2  | gpu_batched_bs128        |     1.942  |       1497.06 |           |             |           |
+| stage2  | gpu_amp_bs64             |     1.389  |       1611.08 |           |             |           |
+| stage3  | numpy_baseline           |     0.7235 |        662.03 |           |             |           |
+| stage3  | numpy_vectorized         |     0.0491 |        662.27 |           |             |           |
+| stage3  | numpy_vectorized_prenorm |     0.0103 |        665.59 |           |             |           |
+| stage3  | numba_jit                |     0.0884 |        665.59 |           |             |           |
+| stage3  | faiss_flat               |     0.0095 |        665.61 |           |             |           |
+| stage4  | gen_float32_cpu          |   151.659  |       9245.28 |           |             |           |
+| stage4  | gen_float16_cpu          |   309.965  |       9245.79 |           |             |           |
+| stage4  | gen_float16_gpu          |    11.6048 |       9826.69 |           |             |           |
+| stage4  | gen_4bit_gpu             |    16.0385 |       9839.25 |           |             |           |
+| e2e     | baseline_e2e             |   572.637  |       7441.63 |           |             |           |
+| e2e     | trad_python_opt_e2e      |   581.992  |       5616.81 |           |             |           |
+| e2e     | optimized_e2e            |    32.4562 |       9907.66 |           |             |           |

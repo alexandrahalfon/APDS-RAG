@@ -20,7 +20,7 @@ def get_model():
     if _model is None:
         from sentence_transformers import SentenceTransformer
         print(f"Loading model '{MODEL_NAME}'...")
-        _model = SentenceTransformer(MODEL_NAME)
+        _model = SentenceTransformer(MODEL_NAME, device="cpu")
         print(f"✓ Model loaded")
     return _model
 

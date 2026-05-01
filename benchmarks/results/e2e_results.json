@@ -1,22 +1,22 @@
 {
   "baseline_e2e": {
-    "time_seconds": 1011.2885,
-    "peak_memory_mb": 8796.25
+    "time_seconds": 572.6366,
+    "peak_memory_mb": 7441.63
   },
   "trad_python_opt_e2e": {
-    "time_seconds": 4357.1887,
-    "peak_memory_mb": 10069.69
+    "time_seconds": 581.9918,
+    "peak_memory_mb": 5616.81
   },
   "optimized_e2e": {
-    "time_seconds": 339.0226,
-    "peak_memory_mb": 11053.65
+    "time_seconds": 32.4562,
+    "peak_memory_mb": 9907.66
   },
   "speedup_trad_python": {
-    "time_seconds": 0.23,
+    "time_seconds": 0.98,
     "peak_memory_mb": 0.0
   },
   "speedup_fully_optimized": {
-    "time_seconds": 2.98,
+    "time_seconds": 17.64,
     "peak_memory_mb": 0.0
   }
 }
