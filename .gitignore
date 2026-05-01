@@ -24,3 +24,13 @@ venv*/
 # Checkpoints
 *_checkpoint.json
 *_partial.json
+
+# Report drafts
+report/
+
+# Notebooks
+notebooks/
+
+# Misc
+sample_pdfs.zip
+CLAUDE.md
