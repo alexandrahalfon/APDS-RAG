@@ -1,14 +1,14 @@
 {
   "stage1_ingestion": {
-    "time_seconds": 182.4766,
-    "peak_memory_mb": 1223.68
+    "time_seconds": 60.2389,
+    "peak_memory_mb": 1178.39
   },
   "stage2_embedding": {
-    "time_seconds": 52.8492,
-    "peak_memory_mb": 1284.04
+    "time_seconds": 50.6167,
+    "peak_memory_mb": 1243.75
   },
   "stage3_search": {
-    "time_seconds": 0.0986,
-    "peak_memory_mb": 1284.23
+    "time_seconds": 0.1245,
+    "peak_memory_mb": 1243.99
   }
 }
