@@ -1,6 +1,6 @@
-# APDS-RAG: High-Performance RAG Pipeline Optimization
+# High-Performance RAG Pipeline Optimization
 
-A systematic optimization of a Retrieval-Augmented Generation (RAG) pipeline for PDF document processing, built as the final project for **DS-GA 1019 — Advanced Python for Data Science** at NYU.
+A systematic optimization of a Retrieval-Augmented Generation (RAG) pipeline
 
 ## Project Overview
 
@@ -100,8 +100,8 @@ APDS-RAG/
 └── CLAUDE.md                     # Development instructions
 ```
 
-## Team
+## 
 
-**Mac (Alexandra Halfon)** and **Kund Meghani**
+**Alexandra Halfon**
 DS-GA 1019 — Advanced Python for Data Science, Spring 2026
 New York University
